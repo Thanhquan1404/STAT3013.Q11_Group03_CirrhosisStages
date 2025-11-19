@@ -12,7 +12,7 @@ from sklearn.metrics import (
     confusion_matrix, roc_curve, auc, roc_auc_score
 )
 from sklearn.preprocessing import label_binarize
-from XGBoost_module import XGBoostClassifier
+from src.xgboost_classifier import XGBoostClassifier
 import os
 
 
