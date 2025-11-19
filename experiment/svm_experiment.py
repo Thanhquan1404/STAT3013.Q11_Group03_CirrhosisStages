@@ -31,7 +31,7 @@ except ImportError:
 DATASET_CONFIGS = [
     {
         "name": "Cirrhosis",
-        "input_path": os.path.join(project_root, "data", "raw", "liver_cirrhosis.csv"),
+        "input_path": os.path.join(project_root, "data", "raw", "cirrhosis.csv"),
         "output_path": os.path.join(project_root, "results", "result_cirrhosis.csv")
     },
     {
