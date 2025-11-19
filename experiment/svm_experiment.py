@@ -200,7 +200,7 @@ def main_runner():
         cv=cv_strategy, 
         scoring='f1_weighted', 
         n_jobs=-1, 
-        verbose=1  
+        verbose=2  
     )
     
     grid_search.fit(X_train, y_train)
