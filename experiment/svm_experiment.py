@@ -21,7 +21,7 @@ project_root = os.path.dirname(src_dir)
 sys.path.append(project_root) 
 
 try:
-    from src.models.svm import SVMClassifier
+    from src.svm import SVMClassifier
 except ImportError:
     print("❌ Lỗi: Không tìm thấy src/svm.py"); sys.exit(1)
 
