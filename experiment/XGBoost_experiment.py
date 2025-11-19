@@ -1,17 +1,17 @@
 # ====================================================================
-# UNIVERSAL EXPERIMENT PIPELINE – RANDOM FOREST CLASSIFIER
+# UNIVERSAL EXPERIMENT PIPELINE – XGBoost (Custom Implementation)
 # Academic / Research-Grade | Fully Automatic | Binary & Multiclass
 # ====================================================================
 """
-UNIVERSAL RANDOM FOREST EXPERIMENT PIPELINE
-===========================================
+UNIVERSAL XGBoost EXPERIMENT PIPELINE
+=====================================
 • Tự động nhận diện dataset (Indian Liver vs Cirrhosis)
-• Tự động phát hiện nhãn, task (binary/multiclass)
+• Tự động phát hiện nhãn + task (binary/multiclass)
 • Universal preprocessing + scaler factory
 • SMOTE chỉ dùng cho binary
-• Lưu toàn bộ kết quả vào 1 file CSV tổng hợp (dễ so sánh với SVM, LR, XGBoost...)
+• Thử nhiều cấu hình eta, depth, subsample...
+• Lưu kết quả vào file CSV tổng hợp (dễ so sánh với SVM, RF, KNN...)
 • Đo thời gian train/test chính xác
-• Không hard-code cột, đường dẫn giữ nguyên như yêu cầu
 """
 
 import os
@@ -21,19 +21,18 @@ import numpy as np
 import pandas as pd
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from sklearn.ensemble import RandomForestClassifier
 from sklearn.preprocessing import LabelEncoder
 from sklearn.impute import SimpleImputer
-from sklearn.model_selection import train_test_split, StratifiedKFold
+from sklearn.model_selection import train_test_split
 from sklearn.metrics import classification_report, f1_score, accuracy_score
 from imblearn.over_sampling import SMOTE
+from src.XGBoost import XGBoostClassifier  # ← Custom XGBoost của bạn
 
 # ===========================================================================
-# Scaler Factory (giống hệt pipeline trước)
+# Scaler Factory (chuẩn hệ thống)
 # ===========================================================================
 def get_scaler(name: str):
-    from sklearn.preprocessing import StandardScaler, MinMaxScaler, RobustScaler, \
-        Normalizer, MaxAbsScaler, QuantileTransformer
+    from sklearn.preprocessing import StandardScaler, MinMaxScaler, RobustScaler, Normalizer, MaxAbsScaler, QuantileTransformer
     scalers = {
         "StandardScaler": StandardScaler(),
         "MinMaxScaler": MinMaxScaler(),
@@ -47,8 +46,6 @@ def get_scaler(name: str):
         raise ValueError(f"Unsupported scaler: {name}")
     return scalers[name]
 
-# ===========================================================================
-# UNIVERSAL PREPROCESSING (tự động detect tất cả)
 # ===========================================================================
 def universal_preprocessing(
     path: str,
@@ -67,23 +64,30 @@ def universal_preprocessing(
 
     y_raw = df[label_col].copy()
 
-    # Task detection: binary hay multiclass
-    unique_vals = np.unique(y_raw.dropna())
+    # Task detection + chuẩn hóa nhãn cho XGBoost
+    unique_vals = sorted(y_raw.dropna().unique().astype(int))
     if len(unique_vals) > 2 or label_col == "Stage":
         task = "multiclass"
-        y = y_raw.astype(int).values
         n_classes = len(unique_vals)
+        # Remap nhãn về 0, 1, 2, ..., n-1 (XGBoost bắt buộc!)
+        label_mapping = {old: new for new, old in enumerate(unique_vals)}
+        y = y_raw.map(label_mapping).astype(int).values
+        print(f"[INFO] Multiclass detected → Remapped labels: {unique_vals} → [0, {n_classes-1}]")
     else:
         task = "binary"
         n_classes = 2
         pos_label = y_raw.max()
-        y = (y_raw == pos_label).astype(int).values
+        y = (y_raw == pos_label).astype(int).values  # 0 và 1
+        print(f"[INFO] Binary task → Positive class: {int(pos_label)}")
 
     # Drop missing label
     if y_raw.isnull().any():
         df = df.dropna(subset=[label_col]).reset_index(drop=True)
 
     X = df.drop(columns=[label_col])
+
+    # Lưu tên cột trước khi scale (để feature importance)
+    feature_names = X.columns.tolist()
 
     # Encode categorical
     cat_cols = X.select_dtypes(include=["object", "category"]).columns
@@ -104,7 +108,7 @@ def universal_preprocessing(
     y = np.asarray(y, dtype=int)
 
     # Stratified split
-    stratify = y if task == "multiclass" or n_classes == 2 else None
+    stratify = y if task == "binary" or n_classes > 2 else None
     X_train, X_test, y_train, y_test = train_test_split(
         X, y, test_size=0.2, random_state=random_state, stratify=stratify
     )
@@ -115,104 +119,89 @@ def universal_preprocessing(
         print(f"[INFO] SMOTE applied → X_train: {X_train.shape}")
 
     print(f"[INFO] Task: {task.upper()} | Classes: {n_classes} | Train: {X_train.shape[0]} | Test: {X_test.shape[0]}")
-    return X_train, y_train, X_test, y_test, task, label_col
+    
+    return X_train, y_train, X_test, y_test, task, label_col, feature_names, unique_vals  
 
-# ===========================================================================
-# MAIN EXPERIMENT LOOP – RANDOM FOREST
+
 # ===========================================================================
 if __name__ == "__main__":
-
     # DATASET_PATH = "../data/processed/indian_liver_patient_preprocessed.csv"
-    # OUTPUT_CSV = "../experiment_result/random_forest_indian_liver_patient_result.csv"
+    # OUTPUT_CSV = "../experiment_result/xgboost_indian_liver_patient_result.csv"
 
     DATASET_PATH = "../data/processed/liver_cirrhosis_preprocessed.csv"
-    OUTPUT_CSV = "../experiment_result/random_forest_liver_cirrhosis_result.csv"
-
+    OUTPUT_CSV = "../experiment_result/xgboost_liver_cirrhosis_result.csv"
     os.makedirs(os.path.dirname(OUTPUT_CSV), exist_ok=True)
 
-    # Header CSV (chỉ ghi 1 lần)
     if not os.path.exists(OUTPUT_CSV):
-        header = (
-            "Dataset,Task,n_estimators,max_depth,min_samples_split,min_samples_leaf,max_features,"
-            "Test_Accuracy,Test_F1_Weighted,Test_F1_Macro,Train_Time_s,Test_Time_s,Scaler,Timestamp\n"
-        )
+        header = "Dataset,Task,Eta,Max_Depth,Subsample,Colsample,Num_Boost,Best_Iter,Test_Accuracy,Test_F1_Weighted,Test_F1_Macro,Train_Time_s,Test_Time_s,Scaler,Timestamp\n"
         with open(OUTPUT_CSV, "w") as f:
             f.write(header)
 
-    # Danh sách hyperparams muốn thử
-    RF_CONFIGS = [
-        {"n_estimators": 100, "max_depth": None,    "min_samples_split": 2,  "min_samples_leaf": 1,  "max_features": "sqrt"},
-        {"n_estimators": 300, "max_depth": None,    "min_samples_split": 2,  "min_samples_leaf": 1,  "max_features": "sqrt"},
-        {"n_estimators": 500, "max_depth": 20,      "min_samples_split": 5,  "min_samples_leaf": 2,  "max_features": "sqrt"},
-        {"n_estimators": 300, "max_depth": None,    "min_samples_split": 2,  "min_samples_leaf": 1,  "max_features": 0.8},
+    XGB_CONFIGS = [
+        {"eta": 0.05, "max_depth": 6,  "subsample": 0.8, "colsample_bytree": 0.8, "num_boost_round": 1000},
+        {"eta": 0.1,  "max_depth": 8,  "subsample": 0.9, "colsample_bytree": 0.9, "num_boost_round": 800},
+        {"eta": 0.03, "max_depth": 10, "subsample": 1.0, "colsample_bytree": 1.0, "num_boost_round": 1500},
     ]
 
     SCALERS = [None, "StandardScaler", "MinMaxScaler", "RobustScaler", "Normalizer","MaxAbsScaler","QuantileTransformer"]
 
     for scaler_name in SCALERS:
-        X_train, y_train, X_test, y_test, task, label_col = universal_preprocessing(
+        X_train, y_train, X_test, y_test, task, label_col, feature_names, original_labels = universal_preprocessing(
             path=DATASET_PATH,
             scaler_name=scaler_name,
-            apply_smote=True,  # Tự động bật/tắt SMOTE
+            apply_smote=True,
             random_state=42
         )
 
-        for cfg in RF_CONFIGS:
-            print(f"\n{'='*70}")
-            print(f"RUNNING RF → {cfg['n_estimators']} trees | depth={cfg['max_depth']} | "
-                  f"feat={cfg['max_features']} | scaler={scaler_name}")
-            print(f"{'='*70}")
+        for cfg in XGB_CONFIGS:
+            print(f"\n{'='*80}")
+            print(f"XGBOOST → η={cfg['eta']} | depth={cfg['max_depth']} | scaler={scaler_name}")
+            print(f"{'='*80}")
 
-            model = RandomForestClassifier(
-                n_estimators=cfg["n_estimators"],
+            model = XGBoostClassifier(
+                eta=cfg["eta"],
                 max_depth=cfg["max_depth"],
-                min_samples_split=cfg["min_samples_split"],
-                min_samples_leaf=cfg["min_samples_leaf"],
-                max_features=cfg["max_features"],
-                bootstrap=True,
-                class_weight="balanced" if task == "multiclass" else "balanced_subsample",
-                n_jobs=-1,
-                random_state=42
+                subsample=cfg["subsample"],
+                colsample_bytree=cfg["colsample_bytree"],
+                num_boost_round=cfg["num_boost_round"],
+                early_stopping_rounds=50,
+                verbose=False
             )
 
-            # Train
             start_train = time.time()
-            model.fit(X_train, y_train)
+            model.fit(X_train, y_train, X_test, y_test)
             train_time = time.time() - start_train
 
-            # Predict
             start_test = time.time()
             y_pred = model.predict(X_test)
+            y_proba = model.predict_proba(X_test)
             test_time = time.time() - start_test
 
-            # Metrics
-            report = classification_report(y_test, y_pred, output_dict=True, zero_division=0)
-            acc = report["accuracy"]
-            f1_weighted = report["weighted avg"]["f1-score"]
-            f1_macro = report["macro avg"]["f1-score"] if "macro avg" in report else f1_score(y_test, y_pred, average="macro")
+            # Chuyển lại nhãn gốc để tính metrics đúng
+            if task == "multiclass":
+                inv_map = {i: label for i, label in enumerate(original_labels)}
+                y_test_orig = np.array([inv_map[label] for label in y_test])
+                y_pred_orig = np.array([inv_map[label] for label in y_pred])
+            else:
+                y_test_orig = y_test
+                y_pred_orig = y_pred
 
-            # Lưu kết quả
+            report = classification_report(y_test_orig, y_pred_orig, output_dict=True, zero_division=0)
+            acc = report["accuracy"]
+            f1w = report["weighted avg"]["f1-score"]
+            f1m = report.get("macro avg", {}).get("f1-score", f1_score(y_test_orig, y_pred_orig, average="macro"))
+
+            best_iter = model.model.best_iteration if hasattr(model.model, 'best_iteration') else cfg["num_boost_round"]
+
             row = [
-                os.path.basename(DATASET_PATH),
-                task,
-                cfg["n_estimators"],
-                str(cfg["max_depth"]),
-                cfg["min_samples_split"],
-                cfg["min_samples_leaf"],
-                str(cfg["max_features"]),
-                round(acc, 4),
-                round(f1_weighted, 4),
-                round(f1_macro, 4),
-                round(train_time, 4),
-                round(test_time, 4),
-                scaler_name,
+                os.path.basename(DATASET_PATH), task, cfg["eta"], cfg["max_depth"],
+                cfg["subsample"], cfg["colsample_bytree"], cfg["num_boost_round"], best_iter,
+                round(acc, 4), round(f1w, 4), round(f1m, 4),
+                round(train_time, 4), round(test_time, 4), scaler_name,
                 time.strftime("%Y%m%d_%H%M%S")
             ]
-
             pd.DataFrame([row]).to_csv(OUTPUT_CSV, mode="a", header=False, index=False)
 
-            print(f"SAVED | Acc: {acc:.4f} | F1w: {f1_weighted:.4f} | F1m: {f1_macro:.4f}")
-            print(f"Time → Train: {train_time:.2f}s | Test: {test_time:.4f}s\n")
+            print(f"SAVED | Acc: {acc:.4f} | F1w: {f1w:.4f} | Best Iter: {best_iter}\n")
 
-    print(f"\nHOÀN TẤT! Tất cả kết quả Random Forest đã được lưu tại:")
-    print(f"   → {OUTPUT_CSV}")
+    print(f"\nHOÀN TẤT! Kết quả XGBoost đã lưu tại: {OUTPUT_CSV}")

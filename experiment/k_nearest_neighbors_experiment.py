@@ -122,13 +122,11 @@ def universal_preprocessing(
 # ===========================================================================
 if __name__ == "__main__":
 
-    # ====================================================================
-    # CẤU HÌNH CHẠY – CHỈ CẦN THAY 1 DÒNG
-    # ====================================================================
-    DATASET_PATH = "../data/processed/icirrhosis_encoded.csv"        # Multiclass
-    # DATASET_PATH = "../data/processed/liver_cleaned.csv"           # Binary
+    DATASET_PATH = "../data/processed/indian_liver_patient_preprocessed.csv"
+    OUTPUT_CSV = "../experiment_result/k_nearest_neighbor_indian_liver_patient_result.csv"
 
-    OUTPUT_CSV = "../experiment_result/k_nearest_neighbors_cirhosis_result.csv"
+    # DATASET_PATH = "../data/processed/liver_cirrhosis_preprocessed.csv"
+    # OUTPUT_CSV = "../experiment_result/k_nearest_neighbor_liver_cirrhosis_result.csv"
 
     os.makedirs(os.path.dirname(OUTPUT_CSV), exist_ok=True)
 
@@ -142,7 +140,8 @@ if __name__ == "__main__":
             f.write(header)
 
     # Các cấu hình muốn thử
-    SCALERS = ["StandardScaler", "RobustScaler", "MinMaxScaler"]
+    SCALERS = [None, "StandardScaler", "MinMaxScaler", "RobustScaler", "Normalizer","MaxAbsScaler","QuantileTransformer"]
+
     PARAM_GRIDS = [
         {"n_neighbors": 3, "weights": "distance", "metric": "euclidean", "p": 2},
         {"n_neighbors": 5, "weights": "distance", "metric": "euclidean", "p": 2},
