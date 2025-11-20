@@ -154,20 +154,14 @@ if __name__ == "__main__":
 
     # Grid SVM
     SVM_PARAM_GRIDS = [
-        {"kernel": "linear", "C": 0.1},
         {"kernel": "linear", "C": 1.0},
         {"kernel": "linear", "C": 10.0},
 
-        {"kernel": "rbf", "C": 1.0, "gamma": "scale"},
-        {"kernel": "rbf", "C": 10.0, "gamma": "scale"},
-        {"kernel": "rbf", "C": 100.0, "gamma": "scale"},
-        {"kernel": "rbf", "C": 10.0, "gamma": 0.1},
-        {"kernel": "rbf", "C": 10.0, "gamma": 1.0},
+        {"kernel": "rbf", "C": 10.0, "gamma": 0.5},
+        {"kernel": "rbf", "C": 10.0, "gamma": "1"},
 
-        {"kernel": "poly", "C": 1.0, "degree": 2, "gamma": "scale"},
         {"kernel": "poly", "C": 10.0, "degree": 2, "gamma": "scale"},
         {"kernel": "poly", "C": 10.0, "degree": 3, "gamma": "scale"},
-        {"kernel": "poly", "C": 100.0, "degree": 3, "gamma": "scale"},
     ]
 
     total_runs = len(SCALERS) * len(SVM_PARAM_GRIDS)
