@@ -4,6 +4,7 @@ import os
 
 def split_kfold_save(input_path: str,
                      output_dir: str,
+                     output_file_name: str,
                      target_column: str,
                      k_folds=5,
                      random_state=42):
@@ -28,8 +29,8 @@ def split_kfold_save(input_path: str,
         fold_str = str(fold).zfill(2)
         
         # File paths
-        train_path = os.path.join(output_dir, f"indian_liver_patient_train_k_fold_{fold_str}.csv")
-        test_path = os.path.join(output_dir, f"indian_liver_patient_test_k_fold_{fold_str}.csv")
+        train_path = os.path.join(output_dir, f"{output_file_name}_train_k_fold_{fold_str}.csv")
+        test_path = os.path.join(output_dir, f"{output_file_name}_test_k_fold_{fold_str}.csv")
         
         # Save CSVs
         train_df.to_csv(train_path, index=False)
@@ -41,7 +42,18 @@ def split_kfold_save(input_path: str,
 # Split general data into 5 K_Fold
 # split_kfold_save(input_path="indian_liver_patient_cleaned.csv",
 #                  output_dir="../KFold_data",
+#                  output_file_name="indian_liver_patient",
 #                  target_column="Result",
 #                  k_folds=5,
 #                  random_state=42
 #                 )
+
+# Split general data into 5 K_Fold 
+split_kfold_save(
+    input_path="liver_cirrhosis_cleaned.csv",
+    output_dir="../KFold_data",
+    output_file_name="liver_cirrhosis",
+    target_column="Stage",
+    k_folds=5,
+    random_state=42
+)

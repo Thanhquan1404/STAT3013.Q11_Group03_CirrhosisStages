@@ -68,3 +68,43 @@ def apply_SMOTE(inputPath: str, targetColumn: str, outputPath: str):
 #     targetColumn="Result",
 #     outputPath="../data_apply_SMOTE/KFold_data/indian_liver_patient_train_k_fold_05_SMOTE.csv"
 # )
+########### 
+###########
+# Apply SMOTE for raw data 
+# apply_SMOTE(
+#     inputPath="liver_cirrhosis_cleaned.csv", 
+#     targetColumn="Stage", 
+#     outputPath="../data_apply_SMOTE/liver_cirrhosis_after_SMOTE.csv"
+# )
+
+# Apply SMOTE for KFold data
+# KFold = 1
+# apply_SMOTE(
+#     inputPath="../KFold_data/liver_cirrhosis_train_k_fold_01.csv",
+#     targetColumn="Stage",
+#     outputPath="../data_apply_SMOTE/KFold_data/liver_cirrhosis_train_k_fold_01_SMOTE.csv"
+# )
+# KFold = 2
+# apply_SMOTE(
+#     inputPath="../KFold_data/liver_cirrhosis_train_k_fold_02.csv",
+#     targetColumn="Stage",
+#     outputPath="../data_apply_SMOTE/KFold_data/liver_cirrhosis_train_k_fold_02_SMOTE.csv"
+# )
+# # KFold = 3
+# apply_SMOTE(
+#     inputPath="../KFold_data/liver_cirrhosis_train_k_fold_03.csv",
+#     targetColumn="Stage",
+#     outputPath="../data_apply_SMOTE/KFold_data/liver_cirrhosis_train_k_fold_03_SMOTE.csv"
+# )
+# # KFold = 4
+# apply_SMOTE(
+#     inputPath="../KFold_data/liver_cirrhosis_train_k_fold_04.csv",
+#     targetColumn="Stage",
+#     outputPath="../data_apply_SMOTE/KFold_data/liver_cirrhosis_train_k_fold_04_SMOTE.csv"
+# )
+# # KFold = 5
+# apply_SMOTE(
+#     inputPath="../KFold_data/liver_cirrhosis_train_k_fold_05.csv",
+#     targetColumn="Stage",
+#     outputPath="../data_apply_SMOTE/KFold_data/liver_cirrhosis_train_k_fold_05_SMOTE.csv"
+# )

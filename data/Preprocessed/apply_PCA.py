@@ -39,6 +39,11 @@ def apply_PCA_1D(input_path: str,
     
     return df_pca
 
+# Apply PCA for raw data for visualize
+# apply_PCA_1D(
+#     input_path="indian_liver_patient_cleaned.csv",
+#     output_path="/indian_liver_patient_cleaned_after_PCA.csv"
+# )
 # Apply PCA for KFold data after SMOTE
 # KFold = 1
 # apply_PCA_1D(
@@ -65,3 +70,42 @@ def apply_PCA_1D(input_path: str,
 #     input_path="../data_apply_SMOTE/KFold_data/indian_liver_patient_train_k_fold_05_SMOTE.csv",
 #     output_path="../data_apply_SMOTE/PCA/indian_liver_patient_train_k_fold_05_PCA.csv"
 # )
+##########
+##########
+# Apply PCA for raw data for visualize
+apply_PCA_1D(
+    input_path="liver_cirrhosis_cleaned.csv",
+    target_column="Stage",
+    output_path="./liver_cirrhosis_cleaned_after_PCA.csv"
+)
+# Apply PCA for KFold data after SMOTE
+# KFold = 1
+apply_PCA_1D(
+    input_path="../data_apply_SMOTE/KFold_data/liver_cirrhosis_train_k_fold_01_SMOTE.csv",
+    target_column="Stage",
+    output_path="../data_apply_SMOTE/PCA/liver_cirrhosis_train_k_fold_01_PCA.csv"
+)
+# KFold = 2
+apply_PCA_1D(
+    input_path="../data_apply_SMOTE/KFold_data/liver_cirrhosis_train_k_fold_02_SMOTE.csv",
+    target_column="Stage",
+    output_path="../data_apply_SMOTE/PCA/liver_cirrhosis_train_k_fold_02_PCA.csv"
+)
+# KFold = 3
+apply_PCA_1D(
+    input_path="../data_apply_SMOTE/KFold_data/liver_cirrhosis_train_k_fold_03_SMOTE.csv",
+    target_column="Stage",
+    output_path="../data_apply_SMOTE/PCA/liver_cirrhosis_train_k_fold_03_PCA.csv"
+)
+# KFold = 4
+apply_PCA_1D(
+    input_path="../data_apply_SMOTE/KFold_data/liver_cirrhosis_train_k_fold_04_SMOTE.csv",
+    target_column="Stage",
+    output_path="../data_apply_SMOTE/PCA/liver_cirrhosis_train_k_fold_04_PCA.csv"
+)
+# KFold = 5
+apply_PCA_1D(
+    input_path="../data_apply_SMOTE/KFold_data/liver_cirrhosis_train_k_fold_05_SMOTE.csv",
+    target_column="Stage",
+    output_path="../data_apply_SMOTE/PCA/liver_cirrhosis_train_k_fold_05_PCA.csv"
+)
